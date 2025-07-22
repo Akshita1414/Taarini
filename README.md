@@ -1,70 +1,91 @@
-# Getting Started with Create React App
+# 🛰️ Taarini – AI-Powered Drone for Drowning Detection & Rescue
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**Taarini** is a full-stack AI-powered project designed to detect drowning individuals using drone footage. It combines real-time object detection (YOLOv8), semantic segmentation (U-Net), and GPS-based location tracking to support emergency rescue operations efficiently.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+- ⚠️ **YOLOv8**: Detects drowning individuals from drone video frames.
+- 🧠 **U-Net Segmentation**: Highlights water regions and drowning body outlines.
+- 📍 **GPS Mapping**: Displays the exact location of detected individuals on a live dashboard.
+- 📡 **Rescue Alerts**: Sends alerts to nearby rescue teams with coordinates.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🧑‍💻 Tech Stack
 
-### `npm test`
+| Layer         | Technologies                     |
+|---------------|----------------------------------|
+| AI Models     | YOLOv8, U-Net, PyTorch           |
+| Backend       | FastAPI, Python, OpenCV          |
+| Frontend      | React.js, Tailwind CSS           |
+| Utilities     | Lucide Icons, Leaflet.js (Map)   |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🧪 How It Works
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. **Input**: Drone footage or single frame is uploaded.
+2. **Detection**: YOLOv8 identifies a person potentially drowning.
+3. **Segmentation**: U-Net highlights the segmented water area and body.
+4. **Verification**: A pixel-checking function validates detection based on white region presence.
+5. **Output**:
+   - Detection images
+   - GPS coordinates
+   - Live dashboard alert
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🖼️ Sample Output
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **Original Frame**
+- **YOLOv8 Detection**
+- **U-Net Segmentation**
+- **Live GPS Map**
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## ⚙️ Setup Instructions
 
-## Learn More
+### 1. Clone Repo
+```bash
+git clone https://github.com/yourusername/taarini-detection.git
+cd taarini-detection
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+2. Backend Setup
+bash
+Copy
+Edit
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+3. Frontend Setup
+bash
+Copy
+Edit
+cd frontend
+npm install
+npm run dev
+Ensure best.pt and unet.pth are added inside /weights.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Future Enhancements
+Live drone video streaming
 
-### Code Splitting
+Real-time alert integration with IoT devices
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Drone automation for rescue drop
 
-### Analyzing the Bundle Size
+📬 Contact
+For any queries or collaborations, feel free to reach out at aakshita_be22@thapar.edu
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## ⭐ Acknowledgements
+Ultralytics YOLOv8
 
-### Making a Progressive Web App
+PyTorch for U-Net
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+React and Tailwind UI
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
