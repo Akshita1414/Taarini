@@ -6,7 +6,11 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const AIDetection = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [videoResults, setVideoResults] = useState(null);
+  const [videoResults, setVideoResults] = useState(() => {
+    // Initialize from localStorage
+    const saved = localStorage.getItem('videoResults');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [error, setError] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
@@ -37,6 +41,19 @@ const AIDetection = () => {
     };
   }, [videoPreviewUrl]);
 
+  // Save videoResults to localStorage whenever it changes
+  useEffect(() => {
+    if (videoResults) {
+      localStorage.setItem('videoResults', JSON.stringify(videoResults));
+    }
+  }, [videoResults]);
+
+  // Clear localStorage on component unmount if user wants to reset
+  const handleClearResults = () => {
+    setVideoResults(null);
+    localStorage.removeItem('videoResults');
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
       setError('Please select a file first');
@@ -63,6 +80,7 @@ const AIDetection = () => {
 
       const data = await response.json();
       setVideoResults(data);
+      // Results will be auto-saved to localStorage by useEffect
     } catch (err) {
       setError(err.message || 'An error occurred while processing the video');
       console.error('Upload error:', err);
@@ -230,6 +248,15 @@ const AIDetection = () => {
         {/* Overall Results Summary */}
         {videoResults && (
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Analysis Results (Saved Locally)</h2>
+              <button
+                onClick={handleClearResults}
+                className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                Clear Results
+              </button>
+            </div>
             <div className={`p-6 rounded-xl border-2 ${getAlertLevelColor(videoResults.overall_status)}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
@@ -241,7 +268,7 @@ const AIDetection = () => {
                 </div>
               </div>
               <p className="text-lg mb-4 font-medium">{videoResults.overall_message}</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mt-6">
                 <div className="bg-white/70 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold">{videoResults.total_frames_processed}</div>
                   <div className="text-sm mt-1">Frames Processed</div>
@@ -250,15 +277,12 @@ const AIDetection = () => {
                   <div className="text-2xl font-bold">{formatTime(videoResults.video_duration)}</div>
                   <div className="text-sm mt-1">Video Duration</div>
                 </div>
-                <div className="bg-white/70 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold">{videoResults.total_humans_detected}</div>
-                  <div className="text-sm mt-1">Humans Detected</div>
-                </div>
-                <div className="bg-white/70 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">{videoResults.total_submerged}</div>
-                  <div className="text-sm mt-1">Submerged</div>
-                </div>
               </div>
+              {videoResults.total_humans_detected > 0 && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg text-center">
+                  <p className="text-lg font-semibold text-blue-800">Human detected</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -294,17 +318,12 @@ const AIDetection = () => {
                   </div>
 
                   {/* Detection Stats */}
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-blue-50 rounded-lg p-3 text-center">
-                      <Users className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-                      <div className="text-lg font-bold text-blue-800">{frame.human_count}</div>
-                      <div className="text-xs text-blue-600">Humans Detected</div>
-                    </div>
-                    <div className="bg-red-50 rounded-lg p-3 text-center">
-                      <Waves className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                      <div className="text-lg font-bold text-red-800">{frame.submerged_count}</div>
-                      <div className="text-xs text-red-600">Submerged</div>
-                    </div>
+                  <div className="grid grid-cols-1 gap-4 mb-4">
+                    {frame.human_count > 0 && (
+                      <div className="bg-blue-50 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-blue-800">Human detected</div>
+                      </div>
+                    )}
                     <div className="bg-purple-50 rounded-lg p-3 text-center">
                       <Brain className="h-5 w-5 text-purple-600 mx-auto mb-1" />
                       <div className="text-lg font-bold text-purple-800">
@@ -393,8 +412,8 @@ const AIDetection = () => {
                         {frame.detections.map((det, idx) => (
                           <div key={idx} className="text-sm text-gray-700">
                             <span className="font-medium">Detection {idx + 1}:</span>
-                            {' '}Confidence: {Math.round(det.confidence * 100)}% | 
-                            {' '}Water Ratio: {Math.round(det.water_ratio * 100)}% | 
+                            {' '}Confidence: {Math.round(det.confidence * 100)}% |
+                            {' '}Water Ratio: {Math.round(det.water_ratio * 100)}% |
                             {' '}Submerged: {det.is_submerged ? (
                               <span className="text-red-600 font-bold">YES ⚠️</span>
                             ) : (

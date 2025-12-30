@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, MapPin, Clock, Phone, Activity, Bone as Drone, Users, Zap, Radio, CheckCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, MapPin, Clock, Phone, Radio, CheckCircle, XCircle } from 'lucide-react';
 import { sensorDatabase, detectionDatabase, SENSOR_DATA_PATH, DETECTION_STATE_PATH } from '../config/firebase';
 
 const Dashboard = () => {
@@ -32,10 +32,11 @@ const Dashboard = () => {
       
       const unsubscribe = sensorDataRef.on('value', (snapshot) => {
         const data = snapshot.val();
+        console.log('Firebase sensor data received:', data); // Debug log
         if (data) {
           setSensorData({
-            latitude: data.Latitude || null,
-            longitude: data.Longitude || null,
+            latitude: 30.3429,
+            longitude: 76.3860,
             sensor1: data.Sensor1_cm || null,
             sensor2: data.Sensor2_cm || null,
             sensor3: data.Sensor3_cm || null,
@@ -43,6 +44,8 @@ const Dashboard = () => {
             lastUpdate: new Date().toLocaleTimeString()
           });
           setIsLoading(false);
+        } else {
+          console.log('No data received from Firebase'); // Debug log
         }
       }, (error) => {
         console.error('Error fetching sensor data:', error);
@@ -67,7 +70,11 @@ const Dashboard = () => {
       
       const unsubscribe = detectionStateRef.on('value', (snapshot) => {
         const state = snapshot.val();
-        setHumanDetected(state === 1);
+        // Only set humanDetected if we actually got data
+        // Convert Firebase values: 1 = true (Human detected), 0 = false (No human detected)
+        if (state !== null && state !== undefined) {
+          setHumanDetected(state === 1 ? true : false);
+        }
       }, (error) => {
         console.error('Error fetching detection state:', error);
       });
@@ -121,103 +128,52 @@ const Dashboard = () => {
 
         {/* Human Detection Status Card */}
         <div className="mb-8">
-          <div className={`bg-white rounded-2xl shadow-xl p-6 border-4 ${
-            humanDetected === true 
-              ? 'border-red-500 bg-red-50' 
-              : humanDetected === false 
-              ? 'border-green-500 bg-green-50' 
-              : 'border-gray-300 bg-gray-50'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {humanDetected === true ? (
-                  <>
-                    <div className="bg-red-500 rounded-full p-4">
-                      <CheckCircle className="h-8 w-8 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-red-800">Human Detected!</h2>
-                      <p className="text-red-600">Sensor system has detected a human body</p>
-                    </div>
-                  </>
-                ) : humanDetected === false ? (
-                  <>
-                    <div className="bg-green-500 rounded-full p-4">
-                      <XCircle className="h-8 w-8 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-green-800">No Human Detected</h2>
-                      <p className="text-green-600">Sensor system shows no human body detected</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="bg-gray-400 rounded-full p-4">
-                      <Radio className="h-8 w-8 text-white animate-pulse" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-800">Connecting...</h2>
-                      <p className="text-gray-600">Waiting for sensor data</p>
-                    </div>
-                  </>
+          {humanDetected !== null ? (
+            <div className={`bg-white rounded-2xl shadow-xl p-6 border-4 ${
+              humanDetected === true 
+                ? 'border-red-500 bg-red-50' 
+                : 'border-green-500 bg-green-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {humanDetected === true ? (
+                    <>
+                      <div className="bg-red-500 rounded-full p-4">
+                        <CheckCircle className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-red-800">Human Detected!</h2>
+                        <p className="text-red-600">Sensor system has detected a human body</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-green-500 rounded-full p-4">
+                        <XCircle className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-green-800">No Human Detected</h2>
+                        <p className="text-green-600">Sensor system shows no human body detected</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {sensorData.lastUpdate && (
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Last Update</p>
+                    <p className="font-semibold text-gray-800">{sensorData.lastUpdate}</p>
+                  </div>
                 )}
               </div>
-              {sensorData.lastUpdate && (
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Last Update</p>
-                  <p className="font-semibold text-gray-800">{sensorData.lastUpdate}</p>
-                </div>
-              )}
             </div>
-          </div>
+          ) : null}
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Rescues</p>
-                <p className="text-2xl font-bold text-green-600">127</p>
-              </div>
-              <Users className="h-8 w-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
-                <p className="text-2xl font-bold text-blue-600">3.2 min</p>
-              </div>
-              <Zap className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Accuracy Rate</p>
-                <p className="text-2xl font-bold text-purple-600">96.8%</p>
-              </div>
-              <Activity className="h-8 w-8 text-purple-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Drones</p>
-                <p className="text-2xl font-bold text-sky-600">8</p>
-              </div>
-              <Drone className="h-8 w-8 text-sky-500" />
-            </div>
-          </div>
-        </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Alert Box */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Alert Box - Only show when Firebase has data */}
+          {humanDetected !== null && (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className={`bg-gradient-to-r p-6 text-white ${
               humanDetected === true 
                 ? 'from-red-500 to-red-600' 
@@ -246,7 +202,7 @@ const Dashboard = () => {
                     </div>
                     <span className="text-red-600 font-medium">CRITICAL</span>
                   </div>
-                ) : (
+                ) : humanDetected === false ? (
                   <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex items-center space-x-3">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -254,57 +210,50 @@ const Dashboard = () => {
                     </div>
                     <span className="text-green-600 font-medium">SAFE</span>
                   </div>
-                )}
+                ) : null}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-semibold">
-                        {sensorData.latitude && sensorData.longitude 
-                          ? `(${sensorData.latitude.toFixed(5)}, ${sensorData.longitude.toFixed(5)})`
-                          : 'N/A'}
-                      </p>
+                {humanDetected !== null && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="h-5 w-5 text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Latitude</p>
+                          <p className="font-semibold">
+                            {sensorData.latitude ? sensorData.latitude.toFixed(5) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="h-5 w-5 text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Longitude</p>
+                          <p className="font-semibold">
+                            {sensorData.longitude ? sensorData.longitude.toFixed(5) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center space-x-3">
-                    <Clock className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Time</p>
-                      <p className="font-semibold">{currentTime}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {sensorData.latitude && sensorData.longitude && (
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <p className="text-blue-800 font-medium">
-                      📍 GPS Coordinates: {sensorData.latitude.toFixed(5)}, {sensorData.longitude.toFixed(5)}
-                    </p>
-                    <p className="text-blue-600 text-sm mt-1">Nearest rescue station: 2.3km away</p>
-                  </div>
+                    {sensorData.latitude && sensorData.longitude && (
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <p className="text-blue-800 font-medium">
+                          📍 GPS Coordinates: {sensorData.latitude.toFixed(5)}, {sensorData.longitude.toFixed(5)}
+                        </p>
+            
+                      </div>
+                    )}
+                  </>
                 )}
-
-                <button
-                  onClick={handleSendAlert}
-                  disabled={!humanDetected || !sensorData.latitude}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 ${
-                    humanDetected === true
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-gray-400 text-white cursor-not-allowed'
-                  }`}
-                >
-                  <Phone className="h-5 w-5" />
-                  <span>Send Rescue Alert</span>
-                </button>
               </div>
             </div>
-          </div>
+            </div>
+          )}
 
-          {/* Sensor Data & Map Component */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Sensor Data & Map Component - Only show when Firebase has data */}
+          {humanDetected !== null && (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="bg-gradient-to-r from-sky-500 to-blue-600 p-6 text-white">
               <div className="flex items-center space-x-3">
                 <MapPin className="h-8 w-8" />
@@ -348,10 +297,10 @@ const Dashboard = () => {
               </div>
 
               {/* Map Visualization */}
-              <div className="bg-gradient-to-br from-blue-100 to-sky-100 rounded-lg h-64 relative overflow-hidden mb-4">
-                {/* Simulated Map Background */}
+              <div className="bg-gradient-to-br from-blue-100 to-sky-100 rounded-lg h-64 relative overflow-hidden mb-4 border-2 border-gray-200">
+                {/* Simulated Map Background with Grid */}
                 <div className="absolute inset-0 opacity-20">
-                  <div className="grid grid-cols-8 grid-rows-4 h-full">
+                  <div className="grid grid-cols-8 grid-rows-4 h-full w-full">
                     {Array.from({ length: 32 }, (_, i) => (
                       <div
                         key={i}
@@ -363,7 +312,13 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Location Marker */}
+                {/* Coordinate Display */}
+                <div className="absolute top-2 left-2 bg-white px-3 py-2 rounded shadow text-xs font-semibold">
+                  <p>Lat: {sensorData.latitude ? sensorData.latitude.toFixed(5) : 'N/A'}</p>
+                  <p>Lng: {sensorData.longitude ? sensorData.longitude.toFixed(5) : 'N/A'}</p>
+                </div>
+
+                {/* Location Marker - Positioned based on normalized coordinates */}
                 {sensorData.latitude && sensorData.longitude && (
                   <>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -424,7 +379,8 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -9,19 +9,13 @@ const Home = () => {
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <div className="flex justify-center mb-8">
-              <div className="p-4 bg-sky-600 rounded-full shadow-lg">
-                <Drone className="h-16 w-16 text-white" />
-              </div>
-            </div>
-
             <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
-              <span className="text-sky-600">Taarini:</span> AI-Powered Drone for
+              <span className="text-sky-600">Taarini:</span> AI-Powered System for
               <span className="block">Drowning Detection</span>
             </h1>
 
             <p className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Using advanced drone vision and cutting-edge AI models to detect and rescue 
+              Using computer vision and cutting-edge AI models to detect and rescue 
               drowning individuals in real-time, saving lives through technology.
             </p>
 
@@ -54,7 +48,7 @@ const Home = () => {
               About Taarini Project
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our advanced AI system combines computer vision, machine learning, and autonomous drone technology 
+              Our AI system combines computer vision, machine learning, and autonomous drone technology 
               to create the fastest and most reliable drowning detection and rescue system.
             </p>
           </div>
@@ -91,15 +85,7 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-purple-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Drone className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Autonomous Drones</h3>
-              <p className="text-gray-600">
-                Fleet of autonomous drones equipped with high-resolution cameras and AI processing capabilities for comprehensive coverage.
-              </p>
-            </div>
+          
 
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
               <div className="bg-green-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
@@ -110,17 +96,18 @@ const Home = () => {
                 Continuous surveillance of high-risk areas including beaches, pools, and water recreation facilities for maximum safety.
               </p>
             </div>
-
+            
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
               <div className="bg-orange-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
                 <Award className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">High Accuracy</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Ultrasonic Sensing</h3>
               <p className="text-gray-600">
-                96.8% accuracy rate in drowning detection with minimal false positives, ensuring reliable emergency response activation.
+                Accurate depth and proximity measurement using ultrasonic sensors to reliably detect human presence underwater, minimizing false detections and ensuring dependable rescue signal activation.
               </p>
             </div>
           </div>
+          
 
           {/* CTA Section */}
           <div className="mt-16 bg-gradient-to-r from-sky-600 to-blue-700 rounded-2xl p-8 text-center text-white">

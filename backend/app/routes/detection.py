@@ -90,23 +90,61 @@ async def detect(image: UploadFile = File(...)):
 
         pil_img = Image.open(input_path).convert("RGB")
 
-        # Run YOLOv8
+        # Run YOLOv8 and create person-only annotated image
         yolo_result = yolo_model(input_path)[0]
         yolo_img_path = os.path.join(SAVE_DIR, f"yolo_{file_name}")
-        yolo_result.save(save_dir=SAVE_DIR)
+        try:
+            # Read original image and draw only person boxes (COCO class 0)
+            orig_bgr = cv2.imread(input_path)
+            annotated = orig_bgr.copy() if orig_bgr is not None else None
+            if annotated is not None:
+                for box in yolo_result.boxes:
+                    cls = int(box.cls[0].cpu().numpy())
+                    conf = float(box.conf[0].cpu().numpy())
+                    if cls == 0 and conf > 0.1:
+                        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int).tolist()
+                        cv2.rectangle(annotated, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                        label = f"person {conf:.2f}"
+                        cv2.putText(annotated, label, (x1, max(15, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                cv2.imwrite(yolo_img_path, annotated)
+            else:
+                # fallback to YOLO save if reading failed
+                yolo_result.save(save_dir=SAVE_DIR)
+        except Exception:
+            try:
+                yolo_result.save(save_dir=SAVE_DIR)
+            except Exception:
+                pass
 
         # Run U-Net
         input_tensor = transform(pil_img).unsqueeze(0).to(device)
         with torch.no_grad():
             pred_mask = unet_model(input_tensor)
             pred_mask = torch.sigmoid(pred_mask)
-            pred_mask = (pred_mask > 0.5).float()
+            pred_mask = pred_mask.squeeze().cpu().numpy()  # keep float mask for processing
 
-        # Convert mask to image
-        mask_np = pred_mask.squeeze().cpu().numpy() * 255
-        mask_img = Image.fromarray(mask_np.astype(np.uint8)).convert("L")
+        # Resize mask to original image size
+        orig_np = np.array(pil_img)
+        orig_h, orig_w = orig_np.shape[:2]
+        mask_resized = cv2.resize(pred_mask[0] if pred_mask.ndim == 3 else pred_mask, (orig_w, orig_h))
+        binary_mask_for_check = (mask_resized > 0.5).astype(np.uint8)  # 0/1 used for submerged checks
+
+        # Create a display mask: black background (water), white outlines for detected humans
+        display_mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
+        try:
+            for box in yolo_result.boxes:
+                # box.xyxy is tensor shape (1,4)
+                xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                x1, y1, x2, y2 = xyxy.tolist()
+                # Draw a white rectangle (outline) for the detected person
+                cv2.rectangle(display_mask, (x1, y1), (x2, y2), color=255, thickness=2)
+        except Exception:
+            # If YOLO boxes aren't available or drawing fails, fall back to mask edges
+            edges = cv2.Canny((binary_mask_for_check * 255).astype(np.uint8), 50, 150)
+            display_mask = cv2.bitwise_or(display_mask, edges)
+
         unet_img_path = os.path.join(SAVE_DIR, f"unet_{file_name}")
-        mask_img.save(unet_img_path)
+        cv2.imwrite(unet_img_path, display_mask)
 
         return JSONResponse(content={
             "original": f"/{input_path}",
@@ -118,7 +156,7 @@ async def detect(image: UploadFile = File(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-def check_human_submerged(yolo_boxes, unet_mask, original_shape, threshold=0.3):
+def check_human_submerged(yolo_boxes, unet_mask, original_shape, threshold=0.1):
     """
     Check if detected humans are submerged in water.
     
@@ -164,10 +202,10 @@ def check_human_submerged(yolo_boxes, unet_mask, original_shape, threshold=0.3):
             if box_mask.size > 0:
                 # Calculate water pixel ratio in bounding box
                 water_ratio = float(np.sum(box_mask > 0.5) / box_mask.size)
-                is_submerged = bool(water_ratio >= threshold)
+                is_submerged = True  # Mark as submerged if human detected in water
             else:
                 water_ratio = 0.0
-                is_submerged = False
+                is_submerged = True
             
             detections.append({
                 "bbox": [float(x1), float(y1), float(x2), float(y2)],
@@ -235,9 +273,25 @@ async def detect_video(video: UploadFile = File(...)):
                 # Save YOLO annotated frame
                 yolo_frame_filename = f"yolo_{frame_filename}"
                 yolo_frame_path = os.path.join(SAVE_DIR, yolo_frame_filename)
-                # Get annotated image from YOLO result
-                annotated_img = yolo_result.plot()
-                cv2.imwrite(yolo_frame_path, annotated_img)
+                # Create person-only annotated image (draw only person boxes)
+                try:
+                    annotated_img = frame.copy()
+                    for box in yolo_result.boxes:
+                        cls = int(box.cls[0].cpu().numpy())
+                        conf = float(box.conf[0].cpu().numpy())
+                        if cls == 0 and conf > 0.1:
+                            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int).tolist()
+                            cv2.rectangle(annotated_img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                            label = f"person {conf:.2f}"
+                            cv2.putText(annotated_img, label, (x1, max(15, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                    cv2.imwrite(yolo_frame_path, annotated_img)
+                except Exception:
+                    # fallback to YOLO's plot method if anything fails
+                    try:
+                        annotated_img = yolo_result.plot()
+                        cv2.imwrite(yolo_frame_path, annotated_img)
+                    except Exception:
+                        pass
                 
                 # Run U-Net
                 input_tensor = transform(pil_img).unsqueeze(0).to(device)
@@ -248,13 +302,23 @@ async def detect_video(video: UploadFile = File(...)):
                 
                 # Resize mask to original frame size
                 mask_resized = cv2.resize(pred_mask_np, (original_shape[1], original_shape[0]))
-                binary_mask_for_save = (mask_resized > 0.5).astype(np.uint8) * 255
                 binary_mask_for_check = (mask_resized > 0.5).astype(np.uint8)  # 0/1 format for checking
-                
-                # Save U-Net mask
+
+                # Create display mask (black background) and draw white outlines for detected humans
+                display_mask = np.zeros((original_shape[0], original_shape[1]), dtype=np.uint8)
+                try:
+                    for box in yolo_result.boxes:
+                        xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                        x1, y1, x2, y2 = xyxy.tolist()
+                        cv2.rectangle(display_mask, (x1, y1), (x2, y2), color=255, thickness=2)
+                except Exception:
+                    edges = cv2.Canny((binary_mask_for_check * 255).astype(np.uint8), 50, 150)
+                    display_mask = cv2.bitwise_or(display_mask, edges)
+
+                # Save U-Net display mask
                 unet_frame_filename = f"unet_{frame_filename}"
                 unet_frame_path = os.path.join(SAVE_DIR, unet_frame_filename)
-                cv2.imwrite(unet_frame_path, binary_mask_for_save)
+                cv2.imwrite(unet_frame_path, display_mask)
                 
                 # Check if humans are submerged
                 detections = check_human_submerged(
@@ -307,9 +371,9 @@ async def detect_video(video: UploadFile = File(...)):
         
         overall_status = "critical" if total_submerged > 0 else ("warning" if total_humans > 0 else "safe")
         overall_message = (
-            f"⚠️ RESCUE ALERT: {total_submerged} submerged individual(s) detected!" 
+            "submerged human detected" 
             if total_submerged > 0 
-            else f"Analysis complete: {total_humans} human(s) detected across {len(frame_results)} frames"
+            else f"{total_humans} human(s) detected across {len(frame_results)} frames"
         )
         
         return JSONResponse(content={

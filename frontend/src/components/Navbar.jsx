@@ -14,7 +14,6 @@ const Navbar = () => {
           
           {/* Brand */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <Drone className="h-8 w-8 text-sky-600 group-hover:text-sky-700 transition-colors" />
             <span className="text-xl font-bold text-gray-800">Taarini</span>
           </Link>
 
